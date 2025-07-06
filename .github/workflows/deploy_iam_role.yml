@@ -1,7 +1,7 @@
 name: Create IAM Role in Org Accounts
 
-on:
-  workflow_dispatch:
+#on:
+#  workflow_dispatch:
 
 permissions:
   id-token: write
