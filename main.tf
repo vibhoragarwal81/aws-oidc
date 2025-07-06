@@ -28,7 +28,7 @@ for ACCOUNT_ID in $ORG_ACCOUNTS; do
   echo "Processing account: $ACCOUNT_ID"
 
   CREDS=$(aws sts assume-role \
-    --role-arn arn:aws:iam::$ACCOUNT_ID:role/GitHubActionsOrgAdminRole \
+    --role-arn arn:aws:iam::$ACCOUNT_ID:role/GitHubActionsTerraformRole \
     --role-session-name SetupSession \
     --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
     --output text 2>/dev/null || true)
@@ -37,7 +37,7 @@ for ACCOUNT_ID in $ORG_ACCOUNTS; do
     echo "OrgAccountAdminRole not found in $ACCOUNT_ID. Creating it..."
 
     CREDS_MGMT=$(aws sts assume-role \
-      --role-arn arn:aws:iam::$MGMT_ACCOUNT_ID:role/GitHubActionsOrgAdminRole \
+      --role-arn arn:aws:iam::$MGMT_ACCOUNT_ID:role/GitHubActionsTerraformRole \
       --role-session-name MgmtSession \
       --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
       --output text)
@@ -61,11 +61,11 @@ EOF
 )
 
     aws sts assume-role \
-      --role-arn arn:aws:iam::$MGMT_ACCOUNT_ID:role/GitHubActionsOrgAdminRole \
+      --role-arn arn:aws:iam::$MGMT_ACCOUNT_ID:role/GitHubActionsTerraformRole  \
       --role-session-name MgmtSession > /dev/null
 
     CREDS_TARGET=$(aws sts assume-role \
-      --role-arn arn:aws:iam::$MGMT_ACCOUNT_ID:role/GitHubActionsOrgAdminRole \
+      --role-arn arn:aws:iam::$MGMT_ACCOUNT_ID:role/GitHubActionsTerraformRole  \
       --role-session-name MgmtSession \
       --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
       --output text)
@@ -111,7 +111,7 @@ EOF
     "Condition": {
       "StringEquals": {
         "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-        "token.actions.githubusercontent.com:sub": "repo:your-org/your-repo:ref:refs/heads/main"
+        "token.actions.githubusercontent.com:sub": "vibhoragarwal81/aws-oidc:ref:refs/heads/main"
       }
     }
   }]
