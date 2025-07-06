@@ -1,46 +1,45 @@
 
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
-provider "aws" {
-  region = "us-east-1"
-}
-
 resource "null_resource" "create_roles" {
   provisioner "local-exec" {
     command = <<EOT
 #!/bin/bash
 set -e
 
-# List all active AWS Organization accounts
+MANAGEMENT_ACCOUNT_ID="872515281040"
+TARGET_ROLE_NAME="GitHubActionsEC2DeployRole"
+ORG_ASSUME_ROLE_NAME="OrgAccountAdminRole"
+AWS_REGION="us-east-1"
+GITHUB_REPO="vibhoragarwal81/aws-oidc"
+
 ACCOUNT_IDS=$(aws organizations list-accounts --query "Accounts[?Status=='ACTIVE'].Id" --output text)
 
 for ACCOUNT_ID in $ACCOUNT_IDS; do
+  if [ "$ACCOUNT_ID" == "$MANAGEMENT_ACCOUNT_ID" ]; then
+    echo "Skipping management account: $ACCOUNT_ID"
+    continue
+  fi
+
   echo "Processing account: $ACCOUNT_ID"
 
-  CREDS=$(aws sts assume-role \
-    --role-arn arn:aws:iam::$ACCOUNT_ID:role/OrgAccountAdminRole \
-    --role-session-name GitHubActionsSession \
-    --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
-    --output text)
+  CREDS=$(aws sts assume-role     --role-arn arn:aws:iam::$ACCOUNT_ID:role/$ORG_ASSUME_ROLE_NAME     --role-session-name GitHubActionsSession     --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]'     --output text 2>/dev/null || true)
+
+  if [ -z "$CREDS" ]; then
+    echo "❌ Failed to assume role in $ACCOUNT_ID"
+    continue
+  fi
 
   export AWS_ACCESS_KEY_ID=$(echo $CREDS | cut -d' ' -f1)
   export AWS_SECRET_ACCESS_KEY=$(echo $CREDS | cut -d' ' -f2)
   export AWS_SESSION_TOKEN=$(echo $CREDS | cut -d' ' -f3)
 
-  # Check if GitHubActionsEC2DeployRole exists
-  if aws iam get-role --role-name GitHubActionsEC2DeployRole >/dev/null 2>&1; then
-    echo "✅ Role GitHubActionsEC2DeployRole already exists in $ACCOUNT_ID"
-  else
-    echo "🚀 Creating role GitHubActionsEC2DeployRole in $ACCOUNT_ID"
+  if aws iam get-role --role-name $TARGET_ROLE_NAME >/dev/null 2>&1; then
+    echo "✅ Role $TARGET_ROLE_NAME already exists in $ACCOUNT_ID"
+    continue
+  fi
 
-    TRUST_POLICY=$(cat <<EOF
+  echo "🚀 Creating role $TARGET_ROLE_NAME in $ACCOUNT_ID"
+
+  TRUST_POLICY=$(cat <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -53,7 +52,7 @@ for ACCOUNT_ID in $ACCOUNT_IDS; do
       "Condition": {
         "StringEquals": {
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-          "token.actions.githubusercontent.com:sub": "vibhoragarwal81/aws-oidc:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub": "repo:${GITHUB_REPO}:ref:refs/heads/main"
         }
       }
     }
@@ -62,7 +61,7 @@ for ACCOUNT_ID in $ACCOUNT_IDS; do
 EOF
 )
 
-    PERMISSIONS_POLICY=$(cat <<EOF
+  PERMISSIONS_POLICY=$(cat <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -79,22 +78,16 @@ EOF
 EOF
 )
 
-    echo "$TRUST_POLICY" > trust-policy.json
-    echo "$PERMISSIONS_POLICY" > permissions-policy.json
+  echo "$TRUST_POLICY" > trust-policy.json
+  echo "$PERMISSIONS_POLICY" > permissions-policy.json
 
-    aws iam create-role \
-      --role-name GitHubActionsEC2DeployRole \
-      --assume-role-policy-document file://trust-policy.json
+  aws iam create-role     --role-name $TARGET_ROLE_NAME     --assume-role-policy-document file://trust-policy.json || true
 
-    aws iam put-role-policy \
-      --role-name GitHubActionsEC2DeployRole \
-      --policy-name GitHubActionsPermissions \
-      --policy-document file://permissions-policy.json
+  aws iam put-role-policy     --role-name $TARGET_ROLE_NAME     --policy-name GitHubActionsPermissions     --policy-document file://permissions-policy.json || true
 
-    rm trust-policy.json permissions-policy.json
+  rm -f trust-policy.json permissions-policy.json
 
-    echo "✅ Role created in $ACCOUNT_ID"
-  fi
+  echo "✅ Role created in $ACCOUNT_ID"
 done
 EOT
   }
