@@ -52,7 +52,7 @@ for ACCOUNT_ID in $ACCOUNT_IDS; do
       "Condition": {
         "StringEquals": {
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-          "token.actions.githubusercontent.com:sub": "repo:${GITHUB_REPO}:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub": "repo:vibhoragarwal81/aws-oidc"
         }
       }
     }
