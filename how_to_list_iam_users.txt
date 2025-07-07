@@ -18,3 +18,4 @@ save the token from Step 1 into a file (token.jwt) and use it in this command.
 export AWS_SESSION_TOKEN=AQoDYXdzEJr...<remainder of session token> $ 
 aws ec2 describe-instances --region us-west-1
 7. Once you are able to list EC2 instance in above command, that means the role assumption is successful and then can be used to assume OrganizationAccountAccessRole in other AWS accounts within the organization. (The role and identity provider must be created in the management account in step 2 and 3). Now Create the list_Iam_users.sh file and run it to get the list of users in all accounts (except the management account because OrganizationAccountAccessRole can not be assumed in management account itself)
+8. if the requirement is to list all iam objects in all aws accounts (within AWS org) then use all_iam_objects_all_accounts.txt file, rename the extension to .sh
