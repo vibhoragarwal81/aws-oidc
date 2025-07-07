@@ -1,0 +1,20 @@
+1. App registration in Entra ID with:
+• Client ID --> api://aws-oidc
+• Tenant ID
+• Client Secret or certificate
+2. OIDC Identity Provider in AWS IAM configured with:
+• Issuer: https://sts.windows.net/{tenant-id}/
+• Audience: your Entra app's client ID
+3. IAM Role in AWS with a trust policy allowing sts:AssumeRoleWithWebIdentity from the OIDC provider.
+
+4 curl -X POST https://login.microsoftonline.com/ac877863-5f25-4759-8c09-4d7b336b9341/oauth2/v2.0/token -H "Content-Type: application/x-www-form-urlencoded" -d "grant_type=client_credentials" -d "client_id=e331bd64-25f4-4c4b-a58a-6a92a9ff94d7" -d "client_secret=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" -d "scope=api://aws-oidc/.default"
+
+save the token from Step 1 into a file (token.jwt) and use it in this command.
+
+5. aws sts assume-role-with-web-identity --role-arn arn:aws:iam::872515281040:role/aws-oidc-role --role-session-name githubrole --web-identity-token file://token.jwt --duration-seconds 3600 -> githubcreds.txt
+6. This should display the access key, secret access key and session token, use those in below commands 
+ export AWS_ACCESS_KEY_ID=xxxxxxxxxxxxxxxxx 
+ export AWS_SECRET_ACCESS_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+export AWS_SESSION_TOKEN=AQoDYXdzEJr...<remainder of session token> $ 
+aws ec2 describe-instances --region us-west-1
+7. Once you are able to list EC2 instance in above command, that means the role assumption is successful and then can be used to assume OrganizationAccountAccessRole in other AWS accounts within the organization. (The role and identity provider must be created in the management account in step 2 and 3). Now Create the list_Iam_users.sh file and run it to get the list of users in all accounts (except the management account because OrganizationAccountAccessRole can not be assumed in management account itself)
