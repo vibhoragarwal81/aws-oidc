@@ -9,9 +9,9 @@ echo "🔐 Requesting token from Entra ID..."
 TOKEN_RESPONSE=$(curl -s -X POST "https://login.microsoftonline.com/$TENANT_ID/oauth2/v2.0/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=client_credentials" \
-  -d "client_id=$ENTRA_CLIENT_ID" \
-  -d "client_secret=$ENTRA_CLIENT_SECRET" \
-  -d "scope=$ENTRA_CLIENT_ID/.default")
+  -d "client_id=e331bd64-25f4-4c4b-a58a-6a92a9ff94d7" \
+  -d "client_secret=$CLIENT_SECRET" \
+  -d "scope=api://aws-oidc/.default")
 
 OIDC_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
 
