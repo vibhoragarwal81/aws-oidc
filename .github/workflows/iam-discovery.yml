@@ -1,0 +1,71 @@
+name: IAM Discovery with Entra ID
+
+on:
+  workflow_dispatch:
+
+jobs:
+  get-token-and-assume-role:
+    name: Get OIDC Token and Assume Role
+    runs-on: ubuntu-latest
+    outputs:
+      creds-path: ${{ steps.export-creds.outputs.creds-path }}
+    env:
+      TENANT_ID: ${{ secrets.ENTRA_TENANT_ID }}
+      CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
+      MANAGEMENT_ACCOUNT_ID: ${{ secrets.MANAGEMENT_ACCOUNT_ID }}
+      ROLE_NAME: ${{ secrets.MANAGEMENT_ROLE_NAME }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Run Script 1 - Get Token and Assume Role
+        run: |
+          chmod +x ./get_token_and_assume_role.sh
+          ./get_token_and_assume_role.sh
+
+      - name: Export credentials path
+        id: export-creds
+        run: echo "creds-path=aws_temp_creds.sh" >> $GITHUB_OUTPUT
+
+      - name: Upload credentials file
+        uses: actions/upload-artifact@v4
+        with:
+          name: aws-creds
+          path: aws_temp_creds.sh
+
+  run-iam-discovery:
+    name: Run IAM Discovery
+    runs-on: ubuntu-latest
+    needs: get-token-and-assume-role
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Download credentials file
+        uses: actions/download-artifact@v4
+        with:
+          name: aws-creds
+
+      - name: Source AWS credentials
+        run: |
+          chmod +x aws_temp_creds.sh
+          source ./aws_temp_creds.sh
+          env | grep AWS
+
+      - name: Run Script 2 - IAM Discovery
+        run: |
+          chmod +x ./list_all_iam_objects_all_accounts.sh
+          ./list_all_iam_objects_all_accounts.sh
+
+      - name: Upload IAM Discovery Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: iam-discovery-report
+          path: iam_discovery_report.csv
