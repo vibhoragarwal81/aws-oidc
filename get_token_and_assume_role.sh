@@ -1,11 +1,6 @@
 #!/bin/bash
 
 # === CONFIGURATION ===
-TENANT_ID="ac877863-5f25-4759-8c09-4d7b336b9341"
-CLIENT_ID="api://aws-oidc"
-CLIENT_SECRET=""
-AWS_ACCOUNT_ID="<your-management-account-id>"
-ROLE_NAME="872515281040"
 TOKEN_FILE="token.jwt"
 CREDENTIALS_FILE="aws_temp_creds.sh"
 
@@ -32,7 +27,7 @@ echo "✅ Token saved to $TOKEN_FILE"
 # === STEP 2: Assume Role in AWS ===
 echo "🔄 Assuming role in AWS account $AWS_ACCOUNT_ID..."
 ASSUME_ROLE_OUTPUT=$(aws sts assume-role-with-web-identity \
-  --role-arn arn:aws:iam::$AWS_ACCOUNT_ID:role/$ROLE_NAME \
+  --role-arn arn:aws:iam::$MANAGEMENT_ACCOUNT_ID:role/$ROLE_NAME \
   --role-session-name EntraOIDCSession \
   --web-identity-token file://$TOKEN_FILE \
   --duration-seconds 3600)
