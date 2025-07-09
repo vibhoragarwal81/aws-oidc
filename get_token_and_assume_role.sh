@@ -9,9 +9,9 @@ echo "🔐 Requesting token from Entra ID..."
 TOKEN_RESPONSE=$(curl -s -X POST "https://login.microsoftonline.com/$TENANT_ID/oauth2/v2.0/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=client_credentials" \
-  -d "client_id=$CLIENT_ID" \
-  -d "client_secret=$CLIENT_SECRET" \
-  -d "scope=$CLIENT_ID/.default")
+  -d "client_id=$ENTRA_CLIENT_ID" \
+  -d "client_secret=$ENTRA_CLIENT_SECRET" \
+  -d "scope=$ENTRA_CLIENT_ID/.default")
 
 OIDC_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
 
@@ -27,7 +27,7 @@ echo "✅ Token saved to $TOKEN_FILE"
 # === STEP 2: Assume Role in AWS ===
 echo "🔄 Assuming role in AWS account $AWS_ACCOUNT_ID..."
 ASSUME_ROLE_OUTPUT=$(aws sts assume-role-with-web-identity \
-  --role-arn arn:aws:iam::$MANAGEMENT_ACCOUNT_ID:role/$ROLE_NAME \
+  --role-arn arn:aws:iam::$MANAGEMENT_ACCOUNT_ID:role/$MANAGEMENT_ROLE_NAME \
   --role-session-name EntraOIDCSession \
   --web-identity-token file://$TOKEN_FILE \
   --duration-seconds 3600)
