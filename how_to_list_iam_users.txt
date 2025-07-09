@@ -1,3 +1,10 @@
+Task 1: Register an application in Entra ID and create a service principal.
+Task 2: Configure an OIDC provider in AWS IAM service in management account that trusts tokens issued by Entra ID.
+Task 3: Create IAM role with trust policies that allow the Entra ID service principal to assume them using sts:AssumeRoleWithWebIdentity.
+Task 4: List all accounts in AWS organization
+Task 5: Assume OrganizationAccountAccessRole in each account 
+Task 6: List all IAM objects in each account and move to next one
+
 1. App registration in Entra ID with:
 • Client ID --> api://aws-oidc
 • Tenant ID
